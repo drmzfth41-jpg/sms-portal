@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Raporlar — SMS Portal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+  <link href="assets/css/style.css" rel="stylesheet">
+</head>
+<body>
+<div class="wrapper">
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><i class="bi bi-chat-dots-fill"></i><span>SMS Portal</span></div>
+    <ul class="sidebar-nav list-unstyled mb-0">
+      <li><span class="nav-section">GENEL</span></li>
+      <li><a href="dashboard.html"   class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
+      <li><a href="gonderici.html"   class="nav-link"><i class="bi bi-person-badge"></i><span>Gönderici Başlıkları</span></a></li>
+      <li><span class="nav-section mt-3">SMS GÖNDER</span></li>
+      <li><a href="tekil-sms.html"   class="nav-link"><i class="bi bi-send"></i><span>Tekil SMS</span></a></li>
+      <li><a href="toplu-sms.html"   class="nav-link"><i class="bi bi-send-fill"></i><span>Toplu SMS</span></a></li>
+      <li><a href="dinamik-sms.html" class="nav-link"><i class="bi bi-magic"></i><span>Dinamik SMS</span></a></li>
+      <li><a href="otp-sms.html"     class="nav-link"><i class="bi bi-shield-lock"></i><span>OTP / Doğrulama</span></a></li>
+      <li><span class="nav-section mt-3">RAPORLAR</span></li>
+      <li><a href="raporlar.html"    class="nav-link active"><i class="bi bi-bar-chart-line"></i><span>Gönderim Raporları</span></a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <a href="#" class="nav-link" data-logout><i class="bi bi-box-arrow-right"></i><span>Çıkış Yap</span></a>
+    </div>
+  </nav>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="main-content">
+    <nav class="topbar">
+      <div class="topbar-left">
+        <button class="sidebar-toggle" id="sidebarToggle"><i class="bi bi-list"></i></button>
+      </div>
+      <div class="topbar-right">
+        <span class="credit-badge"><i class="bi bi-credit-card"></i><span id="creditValue">…</span> kredi</span>
+        <div class="dropdown">
+          <button class="dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-person-circle fs-5"></i></button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item text-danger" href="#" data-logout><i class="bi bi-box-arrow-right"></i>Çıkış Yap</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="page-content">
+      <div class="page-header d-flex align-items-start justify-content-between flex-wrap gap-2">
+        <div>
+          <h1><i class="bi bi-bar-chart-line me-2" style="color:var(--accent-1)"></i>Gönderim Raporları</h1>
+          <p>Tüm SMS paketlerini görüntüleyin ve yönetin</p>
+        </div>
+        <button class="btn btn-outline-secondary btn-sm" id="refreshBtn">
+          <i class="bi bi-arrow-clockwise me-1"></i>Yenile
+        </button>
+      </div>
+
+      <!-- Filtreler -->
+      <div class="card mb-4">
+        <div class="card-body">
+          <div class="row g-2 align-items-end">
+            <div class="col-sm-6 col-md-3">
+              <label class="form-label">Durum</label>
+              <select class="form-select form-select-sm" id="filterStatus">
+                <option value="">Tümü</option>
+                <option value="0">Bekliyor</option>
+                <option value="1">Gönderiliyor</option>
+                <option value="2">Tamamlandı</option>
+                <option value="3">İptal</option>
+                <option value="4">Hata</option>
+              </select>
+            </div>
+            <div class="col-sm-6 col-md-3">
+              <label class="form-label">Anahtar Kelime</label>
+              <input type="text" class="form-control form-control-sm" id="filterKeyword" placeholder="Başlık ara…">
+            </div>
+            <div class="col-sm-6 col-md-2">
+              <label class="form-label">Başlangıç</label>
+              <input type="date" class="form-control form-control-sm" id="filterStartDate">
+            </div>
+            <div class="col-sm-6 col-md-2">
+              <label class="form-label">Bitiş</label>
+              <input type="date" class="form-control form-control-sm" id="filterEndDate">
+            </div>
+            <div class="col-sm-4 col-md-1">
+              <label class="form-label">Sayfa</label>
+              <select class="form-select form-select-sm" id="filterPageSize">
+                <option value="25">25</option>
+                <option value="50" selected>50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+            <div class="col-auto">
+              <button class="btn btn-primary btn-sm" id="filterBtn">
+                <i class="bi bi-funnel me-1"></i>Filtrele
+              </button>
+              <button class="btn btn-outline-secondary btn-sm ms-1" id="clearFilterBtn" title="Filtreleri temizle">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tablo -->
+      <div class="card">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table mb-0" id="packagesTable">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Başlık</th>
+                  <th>Gönderici</th>
+                  <th>Toplam</th>
+                  <th>İletilen</th>
+                  <th>İletilemeyen</th>
+                  <th>Durum</th>
+                  <th>Tarih</th>
+                  <th>İşlem</th>
+                </tr>
+              </thead>
+              <tbody id="packagesBody">
+                <tr><td colspan="9" class="text-center text-muted py-5">
+                  <span class="spinner-border spinner-border-sm me-2"></span>Yükleniyor…
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Detay Modal -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-list-ul me-2"></i>Paket Detayı — <span id="modalPkgId"></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-0">
+        <!-- İstatistik özeti -->
+        <div class="p-3 border-bottom" style="border-color:var(--border)!important">
+          <div class="row g-3" id="modalStats"></div>
+        </div>
+        <!-- Alıcı tablosu -->
+        <div class="table-responsive">
+          <table class="table mb-0" id="itemsTable">
+            <thead>
+              <tr>
+                <th>Numara</th>
+                <th>Durum</th>
+                <th>Operatör</th>
+                <th>Gönderim Tarihi</th>
+                <th>İletim Tarihi</th>
+              </tr>
+            </thead>
+            <tbody id="itemsBody">
+              <tr><td colspan="5" class="text-center text-muted py-4">
+                <span class="spinner-border spinner-border-sm me-2"></span>Yükleniyor…
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Kapat</button>
+        <button type="button" class="btn btn-danger btn-sm" id="cancelPkgBtn" style="display:none">
+          <i class="bi bi-x-circle me-1"></i>Paketi İptal Et
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-container"></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/api.js"></script>
+<script>
+APP.init();
+
+const stateMap   = { 0:'Bekliyor', 1:'Gönderiliyor', 2:'Tamamlandı', 3:'İptal', 4:'Hata' };
+const stateClass = { 0:'pending',  1:'sending',       2:'delivered',  3:'cancelled', 4:'failed' };
+
+let dt = null;
+let currentPkgId = null;
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function pct(a, b) {
+  if (!b) return '—';
+  return Math.round(a / b * 100) + '%';
+}
+
+async function loadPackages() {
+  const status   = document.getElementById('filterStatus').value;
+  const keyword  = document.getElementById('filterKeyword').value.trim();
+  const pageSize = parseInt(document.getElementById('filterPageSize').value);
+
+  const startDate = document.getElementById('filterStartDate').value;
+  const endDate   = document.getElementById('filterEndDate').value;
+
+  const res  = await API.getPackages({
+    status:     status    ? parseInt(status) : null,
+    keyword:    keyword   || null,
+    startDate:  startDate || null,
+    finishDate: endDate   || null,
+    pageSize,
+    pageIndex: 0,
+  });
+
+  const list = res?.list || [];
+  const tbody = document.getElementById('packagesBody');
+
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-5">Kayıt bulunamadı.</td></tr>';
+    if (dt) { dt.destroy(); dt = null; }
+    return;
+  }
+
+  tbody.innerHTML = list.map(p => {
+    const total       = p.statistics?.total       || 0;
+    const delivered   = p.statistics?.delivered   || 0;
+    const undelivered = p.statistics?.undelivered || 0;
+    const sc = stateClass[p.state] ?? 'pending';
+    const sl = stateMap[p.state]   ?? p.state;
+    const canCancel = p.state === 0 || p.state === 1;
+    return `<tr>
+      <td><code>${p.id}</code></td>
+      <td>${esc(p.title || '—')}</td>
+      <td><span style="font-size:.8rem">${esc(p.sender || '—')}</span></td>
+      <td>${total.toLocaleString('tr-TR')}</td>
+      <td><span style="color:var(--success)">${delivered.toLocaleString('tr-TR')}</span>
+          <small style="color:var(--text-dim)"> (${pct(delivered,total)})</small></td>
+      <td><span style="color:${undelivered ? 'var(--danger)' : 'var(--text-dim)'}">${undelivered.toLocaleString('tr-TR')}</span></td>
+      <td><span class="badge-status ${sc}">${sl}</span></td>
+      <td style="font-size:.78rem;color:var(--text-dim);white-space:nowrap">
+        ${p.createDate ? new Date(p.createDate).toLocaleString('tr-TR') : '—'}
+      </td>
+      <td>
+        <div class="d-flex gap-1">
+          <button class="btn btn-outline-secondary btn-sm" onclick="openDetail(${p.id}, ${canCancel})" title="Detay">
+            <i class="bi bi-eye"></i>
+          </button>
+          ${canCancel ? `<button class="btn btn-danger btn-sm" onclick="cancelPkg(${p.id})" title="İptal">
+            <i class="bi bi-x-circle"></i>
+          </button>` : ''}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  if (dt) { dt.destroy(); }
+  dt = $('#packagesTable').DataTable({
+    language: {
+      search: 'Ara:', lengthMenu: '_MENU_ kayıt göster',
+      info: '_TOTAL_ kayıttan _START_–_END_ arası',
+      infoEmpty: '0 kayıt', zeroRecords: 'Kayıt yok',
+      paginate: { first:'İlk', last:'Son', next:'›', previous:'‹' },
+    },
+    order: [],
+    pageLength: 25,
+    columnDefs: [{ orderable: false, targets: 8 }],
+  });
+}
+
+async function openDetail(pkgId, canCancel) {
+  currentPkgId = pkgId;
+  document.getElementById('modalPkgId').textContent = pkgId;
+  document.getElementById('modalStats').innerHTML   = '';
+  document.getElementById('itemsBody').innerHTML    = '<tr><td colspan="5" class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm me-2"></span>Yükleniyor…</td></tr>';
+  document.getElementById('cancelPkgBtn').style.display = canCancel ? '' : 'none';
+
+  const modal = new bootstrap.Modal(document.getElementById('detailModal'));
+  modal.show();
+
+  const res  = await API.getPackageItems({ pkgID: pkgId, pageSize: 100 });
+  const list = res?.list || [];
+
+  // İstatistik
+  const total       = list.length;
+  const delivered   = list.filter(i => i.state === 1).length;
+  const undelivered = list.filter(i => i.state === 2).length;
+  const pending     = list.filter(i => i.state === 0).length;
+
+  document.getElementById('modalStats').innerHTML = `
+    <div class="col-6 col-md-3">
+      <div class="stat-card py-2 px-3">
+        <div class="stat-icon blue" style="width:36px;height:36px;font-size:1rem"><i class="bi bi-send"></i></div>
+        <div class="stat-info"><div class="stat-value" style="font-size:1.2rem">${total}</div><div class="stat-label">Toplam</div></div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card py-2 px-3">
+        <div class="stat-icon green" style="width:36px;height:36px;font-size:1rem"><i class="bi bi-check2"></i></div>
+        <div class="stat-info"><div class="stat-value" style="font-size:1.2rem">${delivered}</div><div class="stat-label">İletilen</div></div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card py-2 px-3">
+        <div class="stat-icon red" style="width:36px;height:36px;font-size:1rem"><i class="bi bi-x"></i></div>
+        <div class="stat-info"><div class="stat-value" style="font-size:1.2rem">${undelivered}</div><div class="stat-label">İletilemeyen</div></div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card py-2 px-3">
+        <div class="stat-icon amber" style="width:36px;height:36px;font-size:1rem"><i class="bi bi-clock"></i></div>
+        <div class="stat-info"><div class="stat-value" style="font-size:1.2rem">${pending}</div><div class="stat-label">Bekliyor</div></div>
+      </div>
+    </div>`;
+
+  const itemStateMap   = { 0:'Bekliyor', 1:'İletildi', 2:'İletilmedi', 3:'Gönderiliyor' };
+  const itemStateClass = { 0:'pending', 1:'delivered', 2:'failed', 3:'sending' };
+
+  document.getElementById('itemsBody').innerHTML = list.length
+    ? list.map(i => `<tr>
+        <td><code>${esc(i.target || i.number || '—')}</code></td>
+        <td><span class="badge-status ${itemStateClass[i.state] ?? 'pending'}">${itemStateMap[i.state] ?? i.state}</span></td>
+        <td>${esc(i.operator || '—')}</td>
+        <td style="font-size:.8rem;color:var(--text-dim)">${i.sendDate ? new Date(i.sendDate).toLocaleString('tr-TR') : '—'}</td>
+        <td style="font-size:.8rem;color:var(--text-dim)">${i.deliveryDate ? new Date(i.deliveryDate).toLocaleString('tr-TR') : '—'}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="5" class="text-center text-muted py-4">Alıcı kaydı bulunamadı.</td></tr>';
+}
+
+async function cancelPkg(id) {
+  if (!confirm(`#${id} numaralı paketi iptal etmek istediğinize emin misiniz?`)) return;
+  const res = await API.cancelPackage(id);
+  if (res?.err) {
+    APP.toast('İptal başarısız: ' + (res.err.message || ''), 'error');
+  } else {
+    APP.toast('Paket iptal edildi.', 'success');
+    bootstrap.Modal.getInstance(document.getElementById('detailModal'))?.hide();
+    loadPackages();
+  }
+}
+
+document.getElementById('cancelPkgBtn').addEventListener('click', () => cancelPkg(currentPkgId));
+document.getElementById('filterBtn').addEventListener('click', loadPackages);
+document.getElementById('refreshBtn').addEventListener('click', loadPackages);
+document.getElementById('filterKeyword').addEventListener('keydown', e => e.key === 'Enter' && loadPackages());
+document.getElementById('clearFilterBtn').addEventListener('click', () => {
+  document.getElementById('filterStatus').value    = '';
+  document.getElementById('filterKeyword').value   = '';
+  document.getElementById('filterStartDate').value = '';
+  document.getElementById('filterEndDate').value   = '';
+  loadPackages();
+});
+
+loadPackages();
+</script>
+</body>
+</html>

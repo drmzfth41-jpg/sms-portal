@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Toplu SMS — SMS Portal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="assets/css/style.css" rel="stylesheet">
+</head>
+<body>
+<div class="wrapper">
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><i class="bi bi-chat-dots-fill"></i><span>SMS Portal</span></div>
+    <ul class="sidebar-nav list-unstyled mb-0">
+      <li><span class="nav-section">GENEL</span></li>
+      <li><a href="dashboard.html"   class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
+      <li><a href="gonderici.html"   class="nav-link"><i class="bi bi-person-badge"></i><span>Gönderici Başlıkları</span></a></li>
+      <li><span class="nav-section mt-3">SMS GÖNDER</span></li>
+      <li><a href="tekil-sms.html"   class="nav-link"><i class="bi bi-send"></i><span>Tekil SMS</span></a></li>
+      <li><a href="toplu-sms.html"   class="nav-link active"><i class="bi bi-send-fill"></i><span>Toplu SMS</span></a></li>
+      <li><a href="dinamik-sms.html" class="nav-link"><i class="bi bi-magic"></i><span>Dinamik SMS</span></a></li>
+      <li><a href="otp-sms.html"     class="nav-link"><i class="bi bi-shield-lock"></i><span>OTP / Doğrulama</span></a></li>
+      <li><span class="nav-section mt-3">RAPORLAR</span></li>
+      <li><a href="raporlar.html"    class="nav-link"><i class="bi bi-bar-chart-line"></i><span>Gönderim Raporları</span></a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <a href="#" class="nav-link" data-logout><i class="bi bi-box-arrow-right"></i><span>Çıkış Yap</span></a>
+    </div>
+  </nav>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="main-content">
+    <nav class="topbar">
+      <div class="topbar-left">
+        <button class="sidebar-toggle" id="sidebarToggle"><i class="bi bi-list"></i></button>
+      </div>
+      <div class="topbar-right">
+        <span class="credit-badge"><i class="bi bi-credit-card"></i><span id="creditValue">…</span> kredi</span>
+        <div class="dropdown">
+          <button class="dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-person-circle fs-5"></i></button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item text-danger" href="#" data-logout><i class="bi bi-box-arrow-right"></i>Çıkış Yap</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="page-content">
+      <div class="page-header">
+        <h1><i class="bi bi-send-fill me-2" style="color:var(--accent-1)"></i>Toplu SMS</h1>
+        <p>Aynı mesajı birden fazla numaraya gönderin (1→N)</p>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-lg-7">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-pencil-square"></i><h6>Toplu Gönderim Oluştur</h6></div>
+            <div class="card-body">
+              <form id="smsForm" novalidate>
+                <div class="row g-3">
+                  <div class="col-sm-6">
+                    <label class="form-label">Gönderici Başlığı <span class="text-danger">*</span></label>
+                    <select class="form-select" id="sender"><option value="">Yükleniyor…</option></select>
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label">Gönderim Başlığı</label>
+                    <input type="text" class="form-control" id="title" placeholder="Ör: Kampanya SMS">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">Mesaj İçeriği <span class="text-danger">*</span></label>
+                    <textarea class="form-control" id="content" rows="4" placeholder="Tüm alıcılara gidecek mesaj…"></textarea>
+                    <div class="sms-counter" id="smsCounter">0 karakter · 1 SMS</div>
+                  </div>
+                  <div class="col-12">
+                    <div class="d-flex align-items-center justify-content-between mb-1 flex-wrap gap-2">
+                      <label class="form-label mb-0">
+                        Alıcı Numaralar <span class="text-danger">*</span>
+                        <span class="ms-2 badge" style="background:#dbeafe;color:var(--accent-1);font-size:.75rem;border-radius:12px;padding:.2rem .6rem" id="numCount">0 numara</span>
+                      </label>
+                      <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="csvBtn" title="CSV/TXT dosyasından yükle">
+                          <i class="bi bi-file-earmark-spreadsheet me-1"></i>CSV/TXT Yükle
+                        </button>
+                        <input type="file" id="csvFile" accept=".csv,.txt" style="display:none">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="clearNumBtn" title="Temizle">
+                          <i class="bi bi-trash3"></i>
+                        </button>
+                      </div>
+                    </div>
+                    <textarea class="form-control numbers-textarea" id="numbers" rows="6"
+                      placeholder="Her satıra bir numara giriniz&#10;905301234567&#10;905309876543&#10;905321111111"></textarea>
+                    <div class="form-text">Her satıra bir numara. 90 ile başlamalı, sadece rakam. CSV'den virgülle ayrılmış numaralara da destek var.</div>
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label">Geçerlilik (dk)</label>
+                    <input type="number" class="form-control" id="validity" value="1440" min="1" max="10080">
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label">İleri Tarihli</label>
+                    <input type="datetime-local" class="form-control" id="sendingDate">
+                  </div>
+                  <div class="col-12">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="commercial">
+                      <label class="form-check-label" for="commercial" style="color:var(--text-muted)">Ticari SMS</label>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <button type="submit" class="btn btn-primary w-100" id="sendBtn">
+                      <i class="bi bi-send-fill me-2"></i>Toplu SMS Gönder
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-5">
+          <div class="card mb-3">
+            <div class="card-header"><i class="bi bi-info-circle"></i><h6>Bilgi</h6></div>
+            <div class="card-body">
+              <ul class="mb-0" style="color:var(--text-muted);font-size:.85rem;padding-left:1.25rem;line-height:2">
+                <li>Her alıcıya aynı mesaj gider</li>
+                <li>Numaralar 90 ile başlamalı</li>
+                <li>Türkçe karakter kullanırsanız SMS başına 70 karakter</li>
+                <li>Geçerlilik süresi: mesaj iletilemazsa ne kadar deneneceği</li>
+              </ul>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><i class="bi bi-terminal"></i><h6>API Yanıtı</h6></div>
+            <div class="card-body">
+              <div class="result-box" id="resultBox">—</div>
+              <p class="text-muted mb-0" style="font-size:.8rem" id="resultPlaceholder">
+                Gönderim sonrası API yanıtı burada görünecek.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-container"></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/api.js"></script>
+<script>
+APP.init();
+initSmsCounter('content', 'smsCounter');
+
+// Numara sayacı
+function updateNumCount() {
+  const ta    = document.getElementById('numbers');
+  const lines = ta.value.split(/[\n,;]/).map(l => l.trim().replace(/\D/g,'')).filter(l => l.length >= 10);
+  document.getElementById('numCount').textContent = lines.length + ' numara';
+}
+document.getElementById('numbers').addEventListener('input', updateNumCount);
+
+// CSV/TXT yükleme
+document.getElementById('csvBtn').addEventListener('click', () => document.getElementById('csvFile').click());
+document.getElementById('clearNumBtn').addEventListener('click', () => {
+  document.getElementById('numbers').value = '';
+  updateNumCount();
+});
+
+document.getElementById('csvFile').addEventListener('change', function () {
+  const file = this.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const text    = e.target.result;
+    // Virgül, noktalı virgül veya satır sonu ile ayrılmış numaraları al
+    const numbers = text.split(/[\n,;\r\t]+/)
+      .map(s => s.trim().replace(/\D/g,''))
+      .filter(s => s.length >= 10)
+      .join('\n');
+    const ta = document.getElementById('numbers');
+    ta.value = numbers;
+    updateNumCount();
+    APP.toast(`${numbers.split('\n').filter(Boolean).length} numara yüklendi.`, 'success');
+  };
+  reader.readAsText(file);
+  this.value = '';
+});
+
+// Gönderici listesi (cache'li)
+async function loadSenders() {
+  const res  = await API.getSenders();
+  const sel  = document.getElementById('sender');
+  const list = (res?.list || []).filter(s => s.status === 1);
+  sel.innerHTML = list.length
+    ? list.map(s => `<option value="${s.title}">${s.title}</option>`).join('')
+    : '<option value="">Gönderici bulunamadı</option>';
+}
+loadSenders();
+
+document.getElementById('smsForm').addEventListener('submit', async function (e) {
+  e.preventDefault();
+  const content = document.getElementById('content').value.trim();
+  const raw     = document.getElementById('numbers').value;
+  const numbers = raw.split('\n').map(l => l.trim().replace(/\D/g, '')).filter(n => n.length >= 10);
+
+  if (!content)          { APP.toast('Mesaj içeriği boş olamaz.', 'warning'); return; }
+  if (!numbers.length)   { APP.toast('En az bir numara girin.', 'warning'); return; }
+
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Gönderiliyor…';
+
+  const sendingDateVal = document.getElementById('sendingDate').value;
+
+  const res = await API.sendMulti({
+    numbers,
+    content,
+    sender:      document.getElementById('sender').value,
+    title:       document.getElementById('title').value.trim() || undefined,
+    validity:    parseInt(document.getElementById('validity').value) || 1440,
+    commercial:  document.getElementById('commercial').checked,
+    sendingDate: sendingDateVal ? sendingDateVal.replace('T', ' ') : null,
+  });
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-send-fill me-2"></i>Toplu SMS Gönder';
+
+  document.getElementById('resultPlaceholder').style.display = 'none';
+  const isErr = !!res?.err;
+  showResult('resultBox', res, isErr);
+
+  if (isErr) {
+    APP.toast('Gönderim başarısız: ' + (res.err.message || ''), 'error');
+  } else {
+    APP.toast(`${numbers.length} numaraya SMS gönderildi! Paket ID: ${res.pkgID || res.id || '—'}`, 'success');
+  }
+});
+</script>
+</body>
+</html>

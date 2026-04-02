@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — SMS Portal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="assets/css/style.css" rel="stylesheet">
+</head>
+<body>
+<div class="wrapper">
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <i class="bi bi-chat-dots-fill"></i>
+      <span>SMS Portal</span>
+    </div>
+    <ul class="sidebar-nav list-unstyled mb-0">
+      <li><span class="nav-section">GENEL</span></li>
+      <li><a href="dashboard.html"  class="nav-link active"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
+      <li><a href="gonderici.html"  class="nav-link"><i class="bi bi-person-badge"></i><span>Gönderici Başlıkları</span></a></li>
+      <li><span class="nav-section mt-3">SMS GÖNDER</span></li>
+      <li><a href="tekil-sms.html"  class="nav-link"><i class="bi bi-send"></i><span>Tekil SMS</span></a></li>
+      <li><a href="toplu-sms.html"  class="nav-link"><i class="bi bi-send-fill"></i><span>Toplu SMS</span></a></li>
+      <li><a href="dinamik-sms.html" class="nav-link"><i class="bi bi-magic"></i><span>Dinamik SMS</span></a></li>
+      <li><a href="otp-sms.html"    class="nav-link"><i class="bi bi-shield-lock"></i><span>OTP / Doğrulama</span></a></li>
+      <li><span class="nav-section mt-3">RAPORLAR</span></li>
+      <li><a href="raporlar.html"   class="nav-link"><i class="bi bi-bar-chart-line"></i><span>Gönderim Raporları</span></a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <a href="#" class="nav-link" data-logout><i class="bi bi-box-arrow-right"></i><span>Çıkış Yap</span></a>
+    </div>
+  </nav>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- Main -->
+  <div class="main-content">
+    <nav class="topbar">
+      <div class="topbar-left">
+        <button class="sidebar-toggle" id="sidebarToggle"><i class="bi bi-list"></i></button>
+        <span class="text-muted" style="font-size:.85rem">Hoş geldiniz 👋</span>
+      </div>
+      <div class="topbar-right">
+        <span class="credit-badge" id="creditBadge" title="Kalan kredi">
+          <i class="bi bi-credit-card"></i>
+          <span id="creditValue"><span class="spinner-border spinner-border-sm"></span></span> kredi
+        </span>
+        <div class="dropdown">
+          <button class="dropdown-toggle" data-bs-toggle="dropdown">
+            <i class="bi bi-person-circle fs-5"></i>
+            <span class="ms-1" id="userLabel">Admin</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item text-danger" href="#" data-logout><i class="bi bi-box-arrow-right"></i>Çıkış Yap</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="page-content">
+      <div class="page-header">
+        <h1>Dashboard</h1>
+        <p>Hesap özeti ve son gönderim istatistikleri</p>
+      </div>
+
+      <!-- Stat Cards -->
+      <div class="row g-3 mb-4" id="statsRow">
+        <div class="col-sm-6 col-xl-3">
+          <div class="stat-card">
+            <div class="stat-icon green"><i class="bi bi-credit-card-fill"></i></div>
+            <div class="stat-info">
+              <div class="stat-value" id="statCredit">—</div>
+              <div class="stat-label">Kalan Kredi</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <div class="stat-card">
+            <div class="stat-icon blue"><i class="bi bi-send-fill"></i></div>
+            <div class="stat-info">
+              <div class="stat-value" id="statTotal">—</div>
+              <div class="stat-label">Toplam SMS (son 50 paket)</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <div class="stat-card">
+            <div class="stat-icon cyan"><i class="bi bi-check2-all"></i></div>
+            <div class="stat-info">
+              <div class="stat-value" id="statDelivered">—</div>
+              <div class="stat-label">İletilen</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <div class="stat-card">
+            <div class="stat-icon amber"><i class="bi bi-collection-fill"></i></div>
+            <div class="stat-info">
+              <div class="stat-value" id="statPackages">—</div>
+              <div class="stat-label">Paket Sayısı</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="row g-3 mb-4">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-lightning-fill"></i><h6>Hızlı İşlemler</h6></div>
+            <div class="card-body d-flex flex-wrap gap-2">
+              <a href="tekil-sms.html" class="btn btn-primary btn-sm">
+                <i class="bi bi-send me-1"></i>Tekil SMS Gönder
+              </a>
+              <a href="toplu-sms.html" class="btn btn-primary btn-sm">
+                <i class="bi bi-send-fill me-1"></i>Toplu SMS Gönder
+              </a>
+              <a href="dinamik-sms.html" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-magic me-1"></i>Dinamik SMS
+              </a>
+              <a href="otp-sms.html" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-shield-lock me-1"></i>OTP Gönder
+              </a>
+              <a href="raporlar.html" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-bar-chart-line me-1"></i>Raporlar
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Packages -->
+      <div class="card">
+        <div class="card-header justify-content-between">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-clock-history"></i>
+            <h6>Son Gönderimler</h6>
+          </div>
+          <a href="raporlar.html" class="btn btn-outline-secondary btn-sm">Tümünü Gör</a>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table mb-0" id="recentTable">
+              <thead>
+                <tr>
+                  <th>Paket ID</th>
+                  <th>Başlık</th>
+                  <th>Gönderici</th>
+                  <th>Toplam</th>
+                  <th>İletilen</th>
+                  <th>Durum</th>
+                  <th>Tarih</th>
+                </tr>
+              </thead>
+              <tbody id="recentBody">
+                <tr><td colspan="7" class="text-center text-muted py-4">
+                  <span class="spinner-border spinner-border-sm me-2"></span>Yükleniyor...
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div><!-- /.page-content -->
+  </div><!-- /.main-content -->
+</div>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/api.js"></script>
+<script>
+APP.init();
+
+const stateMap = { 0:'Bekliyor', 1:'Gönderiliyor', 2:'Tamamlandı', 3:'İptal', 4:'Hata' };
+const stateClass = { 0:'pending', 1:'sending', 2:'delivered', 3:'cancelled', 4:'failed' };
+
+async function loadDashboard() {
+  // Kredi
+  const cr = await API.getCredit();
+  if (cr && cr.credit !== undefined) {
+    const v = Number(cr.credit).toLocaleString('tr-TR');
+    document.getElementById('statCredit').textContent = v;
+    document.getElementById('creditValue').textContent = v;
+  }
+
+  // Paketler
+  const pkgs = await API.getPackages({ pageIndex: 0, pageSize: 50 });
+  const list  = pkgs?.list || [];
+
+  document.getElementById('statPackages').textContent = list.length;
+
+  let total = 0, delivered = 0;
+  list.forEach(p => {
+    total     += p.statistics?.total     || 0;
+    delivered += p.statistics?.delivered || 0;
+  });
+
+  document.getElementById('statTotal').textContent     = total.toLocaleString('tr-TR');
+  document.getElementById('statDelivered').textContent = delivered.toLocaleString('tr-TR');
+
+  // Tablo
+  const tbody = document.getElementById('recentBody');
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Henüz gönderim yok.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = list.slice(0, 10).map(p => `
+    <tr>
+      <td><code>${p.id}</code></td>
+      <td>${esc(p.title || '—')}</td>
+      <td>${esc(p.sender || '—')}</td>
+      <td>${(p.statistics?.total || 0).toLocaleString('tr-TR')}</td>
+      <td>${(p.statistics?.delivered || 0).toLocaleString('tr-TR')}</td>
+      <td><span class="badge-status ${stateClass[p.state] || 'pending'}">${stateMap[p.state] ?? p.state}</span></td>
+      <td style="font-size:.8rem;color:var(--text-dim)">${p.createDate ? new Date(p.createDate).toLocaleString('tr-TR') : '—'}</td>
+    </tr>`).join('');
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+loadDashboard();
+</script>
+</body>
+</html>

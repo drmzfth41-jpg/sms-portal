@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dinamik SMS — SMS Portal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="assets/css/style.css" rel="stylesheet">
+</head>
+<body>
+<div class="wrapper">
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><i class="bi bi-chat-dots-fill"></i><span>SMS Portal</span></div>
+    <ul class="sidebar-nav list-unstyled mb-0">
+      <li><span class="nav-section">GENEL</span></li>
+      <li><a href="dashboard.html"   class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
+      <li><a href="gonderici.html"   class="nav-link"><i class="bi bi-person-badge"></i><span>Gönderici Başlıkları</span></a></li>
+      <li><span class="nav-section mt-3">SMS GÖNDER</span></li>
+      <li><a href="tekil-sms.html"   class="nav-link"><i class="bi bi-send"></i><span>Tekil SMS</span></a></li>
+      <li><a href="toplu-sms.html"   class="nav-link"><i class="bi bi-send-fill"></i><span>Toplu SMS</span></a></li>
+      <li><a href="dinamik-sms.html" class="nav-link active"><i class="bi bi-magic"></i><span>Dinamik SMS</span></a></li>
+      <li><a href="otp-sms.html"     class="nav-link"><i class="bi bi-shield-lock"></i><span>OTP / Doğrulama</span></a></li>
+      <li><span class="nav-section mt-3">RAPORLAR</span></li>
+      <li><a href="raporlar.html"    class="nav-link"><i class="bi bi-bar-chart-line"></i><span>Gönderim Raporları</span></a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <a href="#" class="nav-link" data-logout><i class="bi bi-box-arrow-right"></i><span>Çıkış Yap</span></a>
+    </div>
+  </nav>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="main-content">
+    <nav class="topbar">
+      <div class="topbar-left">
+        <button class="sidebar-toggle" id="sidebarToggle"><i class="bi bi-list"></i></button>
+      </div>
+      <div class="topbar-right">
+        <span class="credit-badge"><i class="bi bi-credit-card"></i><span id="creditValue">…</span> kredi</span>
+        <div class="dropdown">
+          <button class="dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-person-circle fs-5"></i></button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item text-danger" href="#" data-logout><i class="bi bi-box-arrow-right"></i>Çıkış Yap</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="page-content">
+      <div class="page-header">
+        <h1><i class="bi bi-magic me-2" style="color:var(--accent-1)"></i>Dinamik SMS</h1>
+        <p>Her alıcıya farklı kişiselleştirilmiş mesaj gönderin (N→N)</p>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-lg-8">
+          <div class="card">
+            <div class="card-header justify-content-between">
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-people-fill"></i><h6>Alıcı Listesi</h6>
+              </div>
+              <div class="d-flex gap-2">
+                <select class="form-select form-select-sm" id="sender" style="width:auto"></select>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="row g-2 mb-2" style="font-size:.78rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">
+                <div class="col-5">Numara</div>
+                <div class="col-6">Mesaj</div>
+                <div class="col-1"></div>
+              </div>
+              <div id="rowsContainer"></div>
+              <button type="button" class="btn btn-outline-secondary btn-sm mt-2 w-100" id="addRow">
+                <i class="bi bi-plus-lg me-1"></i>Satır Ekle
+              </button>
+            </div>
+            <div class="card-footer" style="background:transparent;border-top:1px solid var(--border)">
+              <div class="row g-2 align-items-end">
+                <div class="col-sm-4">
+                  <label class="form-label">Geçerlilik (dk)</label>
+                  <input type="number" class="form-control form-control-sm" id="validity" value="1440">
+                </div>
+                <div class="col-sm-4">
+                  <label class="form-label">İleri Tarihli</label>
+                  <input type="datetime-local" class="form-control form-control-sm" id="sendingDate">
+                </div>
+                <div class="col-sm-4 d-flex align-items-end">
+                  <button class="btn btn-primary w-100" id="sendBtn">
+                    <i class="bi bi-magic me-1"></i>Gönder
+                    <span class="ms-1 badge" style="background:rgba(255,255,255,.2)" id="rowCount">0</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-4">
+          <div class="card mb-3">
+            <div class="card-header"><i class="bi bi-info-circle"></i><h6>Nasıl Çalışır?</h6></div>
+            <div class="card-body" style="font-size:.85rem;color:var(--text-muted);line-height:1.8">
+              <p>Her satır için <strong style="color:var(--text-primary)">numara</strong> ve o kişiye özel <strong style="color:var(--text-primary)">mesaj</strong> girilir.</p>
+              <p>Farklı kişilere farklı içerik göndermek için idealdir. Ör: kişiye özel borç bildirimleri, doğum günü mesajları.</p>
+              <hr style="border-color:var(--border)">
+              <p class="mb-0">
+                <i class="bi bi-lightbulb me-1" style="color:var(--warning)"></i>
+                CSV'den toplu yapıştırmak için <strong>Numaralar</strong> sütununa satır satır yapıştırabilirsiniz.
+              </p>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><i class="bi bi-terminal"></i><h6>API Yanıtı</h6></div>
+            <div class="card-body">
+              <div class="result-box" id="resultBox">—</div>
+              <p class="text-muted mb-0" style="font-size:.8rem" id="resultPlaceholder">Gönderim sonrası buraya gelecek.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-container"></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/api.js"></script>
+<script>
+APP.init();
+
+let rowIndex = 0;
+
+function addRow(nr = '', msg = '') {
+  rowIndex++;
+  const id  = `row-${rowIndex}`;
+  const div = document.createElement('div');
+  div.className = 'dynamic-row';
+  div.id = id;
+  div.innerHTML = `
+    <input type="text"  class="form-control form-control-sm nr-input"  placeholder="905XXXXXXXXX" value="${nr}">
+    <input type="text"  class="form-control form-control-sm msg-input" placeholder="Kişiye özel mesaj…" value="${msg}">
+    <button type="button" class="btn-remove" onclick="removeRow('${id}')">
+      <i class="bi bi-trash3"></i>
+    </button>`;
+  document.getElementById('rowsContainer').appendChild(div);
+  updateCount();
+}
+
+function removeRow(id) {
+  document.getElementById(id)?.remove();
+  updateCount();
+}
+
+function updateCount() {
+  const n = document.querySelectorAll('.dynamic-row').length;
+  document.getElementById('rowCount').textContent = n;
+}
+
+// Gönderici
+async function loadSenders() {
+  const res  = await API.getSenders();
+  const sel  = document.getElementById('sender');
+  const list = res?.list || [];
+  sel.innerHTML = list.length
+    ? list.map(s => `<option value="${s.title}">${s.title}</option>`).join('')
+    : '<option value="">Gönderici yok</option>';
+}
+loadSenders();
+
+document.getElementById('addRow').addEventListener('click', () => addRow());
+addRow(); addRow(); // 2 boş satırla başla
+
+document.getElementById('sendBtn').addEventListener('click', async () => {
+  const rows = document.querySelectorAll('.dynamic-row');
+  const numbers = [];
+
+  rows.forEach(row => {
+    const nr  = row.querySelector('.nr-input').value.trim().replace(/\D/g,'');
+    const msg = row.querySelector('.msg-input').value.trim();
+    if (nr && msg) numbers.push({ nr, msg });
+  });
+
+  if (!numbers.length) { APP.toast('En az bir numara ve mesaj girin.', 'warning'); return; }
+
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Gönderiliyor…';
+
+  const sendingDateVal = document.getElementById('sendingDate').value;
+
+  const res = await API.sendDynamic({
+    numbers,
+    sender:      document.getElementById('sender').value,
+    validity:    parseInt(document.getElementById('validity').value) || 1440,
+    sendingDate: sendingDateVal ? sendingDateVal.replace('T',' ') : null,
+  });
+
+  btn.disabled = false;
+  btn.innerHTML = `<i class="bi bi-magic me-1"></i>Gönder <span class="ms-1 badge" style="background:rgba(255,255,255,.2)" id="rowCount">${numbers.length}</span>`;
+
+  document.getElementById('resultPlaceholder').style.display = 'none';
+  const isErr = !!res?.err;
+  showResult('resultBox', res, isErr);
+
+  if (isErr) {
+    APP.toast('Gönderim başarısız: ' + (res.err.message || ''), 'error');
+  } else {
+    APP.toast(`${numbers.length} kişiye dinamik SMS gönderildi! Paket ID: ${res.pkgID || res.id || '—'}`, 'success');
+  }
+});
+</script>
+</body>
+</html>

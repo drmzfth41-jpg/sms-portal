@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>SMS Portal</title>
+  <script>
+    window.location.href = localStorage.getItem('sms_portal_token')
+      ? '/dashboard.html'
+      : '/login.html';
+  </script>
+</head>
+<body></body>
+</html>
