@@ -78,7 +78,24 @@
       margin-bottom: 1rem;
     }
     .error-box.show { display: flex; }
+    .otp-info {
+      background: #eff6ff; border: 1px solid #bfdbfe;
+      color: #1d4ed8; border-radius: 8px;
+      padding: .65rem .9rem; font-size: .85rem;
+      margin-bottom: 1.25rem;
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .otp-input {
+      letter-spacing: .35rem; font-size: 1.5rem; font-weight: 700;
+      text-align: center; font-family: monospace;
+    }
     .spinner-border-sm { width: 1rem; height: 1rem; border-width: .15em; }
+    .back-btn {
+      background: none; border: none; color: var(--text-muted);
+      font-size: .825rem; padding: 0; cursor: pointer; margin-top: 1rem;
+      display: block; text-align: center; width: 100%;
+    }
+    .back-btn:hover { color: var(--accent-1); }
   </style>
 </head>
 <body>
@@ -86,13 +103,14 @@
     <div class="login-card">
       <div class="logo"><i class="bi bi-chat-dots-fill"></i></div>
       <h1>SMS Portal</h1>
-      <p class="sub">Hesabınıza giriş yapın</p>
+      <p class="sub" id="subTitle">Hesabınıza giriş yapın</p>
 
       <div class="error-box" id="errorBox">
         <i class="bi bi-exclamation-circle-fill"></i>
         <span id="errorMsg">Kullanıcı adı veya şifre hatalı.</span>
       </div>
 
+      <!-- Adım 1: Kullanıcı adı + şifre -->
       <form id="loginForm" novalidate>
         <div class="mb-3">
           <label class="form-label" for="username">Kullanıcı Adı</label>
@@ -108,20 +126,58 @@
           </div>
         </div>
         <button type="submit" class="btn-login" id="loginBtn">
-          <span id="btnText"><i class="bi bi-box-arrow-in-right me-2"></i>Giriş Yap</span>
+          <span id="btnText"><i class="bi bi-box-arrow-in-right me-2"></i>Devam Et</span>
           <span id="btnSpinner" class="d-none">
-            <span class="spinner-border spinner-border-sm me-2"></span>Giriş yapılıyor...
+            <span class="spinner-border spinner-border-sm me-2"></span>Doğrulanıyor...
           </span>
         </button>
       </form>
+
+      <!-- Adım 2: OTP -->
+      <div id="otpStep" style="display:none">
+        <div class="otp-info">
+          <i class="bi bi-shield-lock-fill"></i>
+          <span>Telefonunuza gönderilen 6 haneli kodu girin.</span>
+        </div>
+        <form id="otpForm" novalidate>
+          <div class="mb-4">
+            <label class="form-label" for="otpCode">Doğrulama Kodu</label>
+            <input type="text" id="otpCode" class="form-control otp-input"
+                   placeholder="——————" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
+          </div>
+          <button type="submit" class="btn-login" id="otpBtn">
+            <span id="otpBtnText"><i class="bi bi-shield-check me-2"></i>Giriş Yap</span>
+            <span id="otpBtnSpinner" class="d-none">
+              <span class="spinner-border spinner-border-sm me-2"></span>Doğrulanıyor...
+            </span>
+          </button>
+        </form>
+        <button class="back-btn" id="backBtn"><i class="bi bi-arrow-left me-1"></i>Geri Dön</button>
+      </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // Zaten giriş yapmışsa dashboard'a yönlendir
     if (localStorage.getItem('sms_portal_token')) {
       window.location.href = '/dashboard.html';
+    }
+
+    let currentSessionId = null;
+
+    function showError(msg) {
+      document.getElementById('errorMsg').textContent = msg;
+      document.getElementById('errorBox').classList.add('show');
+    }
+
+    function hideError() {
+      document.getElementById('errorBox').classList.remove('show');
+    }
+
+    function setBtnLoading(btnId, spinnerId, textId, loading) {
+      document.getElementById(btnId).disabled = loading;
+      document.getElementById(spinnerId).classList.toggle('d-none', !loading);
+      document.getElementById(textId).classList.toggle('d-none', loading);
     }
 
     document.getElementById('togglePass').addEventListener('click', function () {
@@ -133,21 +189,49 @@
 
     document.getElementById('loginForm').addEventListener('submit', async function (e) {
       e.preventDefault();
-      const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value;
-      const btn      = document.getElementById('loginBtn');
-      const errBox   = document.getElementById('errorBox');
-
-      errBox.classList.remove('show');
-      btn.disabled = true;
-      document.getElementById('btnText').classList.add('d-none');
-      document.getElementById('btnSpinner').classList.remove('d-none');
+      hideError();
+      setBtnLoading('loginBtn', 'btnSpinner', 'btnText', true);
 
       try {
-        const res = await fetch('/api/login', {
+        const res  = await fetch('/api/login', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ username, password }),
+          body:    JSON.stringify({
+            username: document.getElementById('username').value.trim(),
+            password: document.getElementById('password').value,
+          }),
+        });
+        const data = await res.json();
+
+        if (data.otpRequired) {
+          currentSessionId = data.sessionId;
+          document.getElementById('loginForm').style.display = 'none';
+          document.getElementById('otpStep').style.display   = '';
+          document.getElementById('subTitle').textContent    = 'SMS Doğrulama';
+          document.getElementById('otpCode').focus();
+        } else {
+          showError(data.error || 'Giriş başarısız.');
+          setBtnLoading('loginBtn', 'btnSpinner', 'btnText', false);
+        }
+      } catch {
+        showError('Sunucuya bağlanılamadı.');
+        setBtnLoading('loginBtn', 'btnSpinner', 'btnText', false);
+      }
+    });
+
+    document.getElementById('otpForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      hideError();
+      setBtnLoading('otpBtn', 'otpBtnSpinner', 'otpBtnText', true);
+
+      try {
+        const res  = await fetch('/api/verify-otp', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({
+            sessionId: currentSessionId,
+            otp: document.getElementById('otpCode').value.trim(),
+          }),
         });
         const data = await res.json();
 
@@ -155,19 +239,23 @@
           localStorage.setItem('sms_portal_token', data.token);
           window.location.href = '/dashboard.html';
         } else {
-          document.getElementById('errorMsg').textContent = data.error || 'Giriş başarısız.';
-          errBox.classList.add('show');
-          btn.disabled = false;
-          document.getElementById('btnText').classList.remove('d-none');
-          document.getElementById('btnSpinner').classList.add('d-none');
+          showError(data.error || 'Kod hatalı.');
+          setBtnLoading('otpBtn', 'otpBtnSpinner', 'otpBtnText', false);
         }
       } catch {
-        document.getElementById('errorMsg').textContent = 'Sunucuya bağlanılamadı.';
-        errBox.classList.add('show');
-        btn.disabled = false;
-        document.getElementById('btnText').classList.remove('d-none');
-        document.getElementById('btnSpinner').classList.add('d-none');
+        showError('Sunucuya bağlanılamadı.');
+        setBtnLoading('otpBtn', 'otpBtnSpinner', 'otpBtnText', false);
       }
+    });
+
+    document.getElementById('backBtn').addEventListener('click', function () {
+      hideError();
+      currentSessionId = null;
+      document.getElementById('otpStep').style.display   = 'none';
+      document.getElementById('loginForm').style.display = '';
+      document.getElementById('subTitle').textContent    = 'Hesabınıza giriş yapın';
+      document.getElementById('otpCode').value           = '';
+      setBtnLoading('loginBtn', 'btnSpinner', 'btnText', false);
     });
   </script>
 </body>

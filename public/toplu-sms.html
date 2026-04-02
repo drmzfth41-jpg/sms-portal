@@ -101,12 +101,6 @@
                     <input type="datetime-local" class="form-control" id="sendingDate">
                   </div>
                   <div class="col-12">
-                    <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" id="commercial">
-                      <label class="form-check-label" for="commercial" style="color:var(--text-muted)">Ticari SMS</label>
-                    </div>
-                  </div>
-                  <div class="col-12">
                     <button type="submit" class="btn btn-primary w-100" id="sendBtn">
                       <i class="bi bi-send-fill me-2"></i>Toplu SMS Gönder
                     </button>
@@ -219,7 +213,7 @@ document.getElementById('smsForm').addEventListener('submit', async function (e)
     sender:      document.getElementById('sender').value,
     title:       document.getElementById('title').value.trim() || undefined,
     validity:    parseInt(document.getElementById('validity').value) || 1440,
-    commercial:  document.getElementById('commercial').checked,
+    commercial:  false,
     sendingDate: sendingDateVal ? sendingDateVal.replace('T', ' ') : null,
   });
 

@@ -1,9 +1,14 @@
-const { createToken, respond, handleCors } = require('./_helpers');
+const crypto = require('crypto');
+const { createToken, respond, handleCors, izbilFetch } = require('./_helpers');
 
-// Module-level rate limiter (best-effort, per function instance)
+// Rate limiter
 const attempts = new Map();
 const MAX_ATTEMPTS = 5;
-const BLOCK_MS     = 15 * 60 * 1000; // 15 dakika
+const BLOCK_MS     = 15 * 60 * 1000;
+
+// OTP sessions (bellek içi, 5 dk geçerli)
+const otpSessions = new Map();
+const OTP_TTL_MS  = 5 * 60 * 1000;
 
 function getIp(event) {
   return (event.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
@@ -24,12 +29,31 @@ function recordFail(ip) {
   attempts.set(ip, e);
 }
 
+function generateOtp() {
+  return Array.from(crypto.randomBytes(6)).map(b => b % 10).join('');
+}
+
+async function sendOtpSms(otp) {
+  const phone  = process.env.OTP_PHONE || '';
+  const sender = process.env.API_SENDER || '';
+  if (!phone) return { err: { message: 'OTP_PHONE tanımlanmamış.' } };
+
+  return izbilFetch('POST', '/sms/create', {
+    type: 1, sendingType: 0,
+    title: sender, sender,
+    content: `SMS Portal giris kodunuz: ${otp}. 5 dakika gecerlidir.`,
+    number: phone.replace(/\D/g, ''),
+    encoding: 1, validity: 5,
+    commercial: false,
+    sendingDate: null, periodicSettings: null, pushSettings: null,
+  });
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return handleCors();
   if (event.httpMethod !== 'POST') return respond(405, { error: 'Method not allowed' });
 
   const ip = getIp(event);
-
   if (isBlocked(ip)) {
     return respond(429, { error: 'Çok fazla hatalı giriş denemesi. 15 dakika bekleyin.' });
   }
@@ -39,19 +63,33 @@ exports.handler = async (event) => {
     const APP_USER = process.env.APP_USER || 'admin';
     const APP_PASS = process.env.APP_PASS || '';
 
-    if (username === APP_USER && password === APP_PASS) {
-      attempts.delete(ip);
-      const token = createToken({ user: username });
-      return respond(200, { token });
+    if (username !== APP_USER || password !== APP_PASS) {
+      recordFail(ip);
+      const e    = attempts.get(ip);
+      const left = e ? Math.max(0, MAX_ATTEMPTS - e.count) : MAX_ATTEMPTS;
+      return respond(401, {
+        error: `Kullanıcı adı veya şifre hatalı. ${left > 0 ? `${left} deneme hakkınız kaldı.` : 'Hesap kilitlendi.'}`,
+      });
     }
 
-    recordFail(ip);
-    const e    = attempts.get(ip);
-    const left = e ? Math.max(0, MAX_ATTEMPTS - e.count) : MAX_ATTEMPTS;
-    return respond(401, {
-      error: `Kullanıcı adı veya şifre hatalı. ${left > 0 ? `${left} deneme hakkınız kaldı.` : 'Hesap kilitlendi.'}`,
-    });
+    // Kimlik doğrulama başarılı — OTP üret ve gönder
+    attempts.delete(ip);
+    const otp       = generateOtp();
+    const sessionId = crypto.randomBytes(16).toString('hex');
+    otpSessions.set(sessionId, { otp, expiresAt: Date.now() + OTP_TTL_MS, username });
+
+    const smsResult = await sendOtpSms(otp);
+    if (smsResult?.err) {
+      // SMS gönderilemedi ama OTP'yi yine de oluştur (dev/test için fallback)
+      console.error('OTP SMS gönderilemedi:', smsResult.err);
+    }
+
+    return respond(200, { otpRequired: true, sessionId });
   } catch {
     return respond(400, { error: 'Geçersiz istek.' });
   }
 };
+
+// verify-otp için export
+module.exports.otpSessions = otpSessions;
+module.exports.createToken = createToken;
