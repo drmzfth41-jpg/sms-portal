@@ -5,5 +5,8 @@
   "description": "izbil.com SMS API yönetim portalı",
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
   }
 }

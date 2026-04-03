@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { createToken, respond, handleCors, izbilFetch } = require('./_helpers');
+const { getUser, ensureAdminExists, hashPassword } = require('./_users');
 
 // Rate limiter
 const attempts = new Map();
@@ -33,10 +34,9 @@ function generateOtp() {
   return Array.from(crypto.randomBytes(6)).map(b => b % 10).join('');
 }
 
-async function sendOtpSms(otp) {
-  const phone  = process.env.OTP_PHONE || '';
+async function sendOtpSms(otp, phone) {
   const sender = process.env.API_SENDER || '';
-  if (!phone) return { err: { message: 'OTP_PHONE tanımlanmamış.' } };
+  if (!phone) return { err: { message: 'Kullanıcıya telefon numarası tanımlı değil.' } };
 
   return izbilFetch('POST', '/sms/create', {
     type: 1, sendingType: 0,
@@ -60,10 +60,13 @@ exports.handler = async (event) => {
 
   try {
     const { username, password } = JSON.parse(event.body || '{}');
-    const APP_USER = process.env.APP_USER || 'admin';
-    const APP_PASS = process.env.APP_PASS || '';
 
-    if (username !== APP_USER || password !== APP_PASS) {
+    // İlk çalıştırmada admin yoksa env'den oluştur
+    await ensureAdminExists();
+
+    const userRecord = await getUser(username);
+
+    if (!userRecord || hashPassword(password, userRecord.salt) !== userRecord.passwordHash) {
       recordFail(ip);
       const e    = attempts.get(ip);
       const left = e ? Math.max(0, MAX_ATTEMPTS - e.count) : MAX_ATTEMPTS;
@@ -76,16 +79,20 @@ exports.handler = async (event) => {
     attempts.delete(ip);
     const otp       = generateOtp();
     const sessionId = crypto.randomBytes(16).toString('hex');
-    otpSessions.set(sessionId, { otp, expiresAt: Date.now() + OTP_TTL_MS, username });
+    otpSessions.set(sessionId, {
+      otp,
+      expiresAt: Date.now() + OTP_TTL_MS,
+      username,
+    });
 
-    const smsResult = await sendOtpSms(otp);
+    const smsResult = await sendOtpSms(otp, userRecord.phone);
     if (smsResult?.err) {
-      // SMS gönderilemedi ama OTP'yi yine de oluştur (dev/test için fallback)
       console.error('OTP SMS gönderilemedi:', smsResult.err);
     }
 
     return respond(200, { otpRequired: true, sessionId });
-  } catch {
+  } catch (e) {
+    console.error('login error:', e);
     return respond(400, { error: 'Geçersiz istek.' });
   }
 };

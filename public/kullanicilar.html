@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kullanıcılar — SMS Portal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="assets/css/style.css" rel="stylesheet">
+</head>
+<body>
+<div class="wrapper">
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><i class="bi bi-chat-dots-fill"></i><span>SMS Portal</span></div>
+    <ul class="sidebar-nav list-unstyled mb-0">
+      <li><span class="nav-section">GENEL</span></li>
+      <li><a href="dashboard.html"    class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
+      <li><a href="gonderici.html"    class="nav-link"><i class="bi bi-person-badge"></i><span>Gönderici Başlıkları</span></a></li>
+      <li><a href="kullanicilar.html" class="nav-link active"><i class="bi bi-people-fill"></i><span>Kullanıcılar</span></a></li>
+      <li><span class="nav-section mt-3">SMS GÖNDER</span></li>
+      <li><a href="tekil-sms.html"    class="nav-link"><i class="bi bi-send"></i><span>Tekil SMS</span></a></li>
+      <li><a href="toplu-sms.html"    class="nav-link"><i class="bi bi-send-fill"></i><span>Toplu SMS</span></a></li>
+      <li><a href="tahsilat-sms.html" class="nav-link"><i class="bi bi-cash-coin"></i><span>Tahsilat SMS</span></a></li>
+      <li><a href="dinamik-sms.html"  class="nav-link"><i class="bi bi-magic"></i><span>Dinamik SMS</span></a></li>
+      <li><a href="otp-sms.html"      class="nav-link"><i class="bi bi-shield-lock"></i><span>OTP / Doğrulama</span></a></li>
+      <li><span class="nav-section mt-3">SORGULA</span></li>
+      <li><a href="numara-sorgula.html" class="nav-link"><i class="bi bi-telephone-inbound"></i><span>Numara Sorgula</span></a></li>
+      <li><span class="nav-section mt-3">RAPORLAR</span></li>
+      <li><a href="raporlar.html"     class="nav-link"><i class="bi bi-bar-chart-line"></i><span>Gönderim Raporları</span></a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <a href="#" class="nav-link" data-logout><i class="bi bi-box-arrow-right"></i><span>Çıkış Yap</span></a>
+    </div>
+  </nav>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="main-content">
+    <nav class="topbar">
+      <div class="topbar-left">
+        <button class="sidebar-toggle" id="sidebarToggle"><i class="bi bi-list"></i></button>
+      </div>
+      <div class="topbar-right">
+        <span class="credit-badge"><i class="bi bi-credit-card"></i><span id="creditValue">…</span> kredi</span>
+        <div class="dropdown">
+          <button class="dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-person-circle fs-5"></i></button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item text-danger" href="#" data-logout><i class="bi bi-box-arrow-right"></i>Çıkış Yap</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="page-content">
+      <div class="page-header d-flex align-items-start justify-content-between flex-wrap gap-2">
+        <div>
+          <h1><i class="bi bi-people-fill me-2" style="color:var(--accent-1)"></i>Kullanıcılar</h1>
+          <p>Portala erişebilecek kullanıcıları ve OTP telefon numaralarını yönetin</p>
+        </div>
+        <button class="btn btn-primary btn-sm" id="addBtn">
+          <i class="bi bi-person-plus-fill me-1"></i>Yeni Kullanıcı
+        </button>
+      </div>
+
+      <!-- Liste -->
+      <div class="card">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table mb-0">
+              <thead>
+                <tr>
+                  <th>Kullanıcı Adı</th>
+                  <th>OTP Telefonu</th>
+                  <th>Rol</th>
+                  <th style="width:130px">İşlemler</th>
+                </tr>
+              </thead>
+              <tbody id="usersBody">
+                <tr><td colspan="4" class="text-center text-muted py-4">
+                  <span class="spinner-border spinner-border-sm me-2"></span>Yükleniyor…
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Kullanıcı Ekle/Düzenle -->
+<div class="modal fade" id="userModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content" style="background:var(--bg-card);border:1px solid var(--border-color)">
+      <div class="modal-header" style="border-color:var(--border-color)">
+        <h5 class="modal-title" id="modalTitle">Yeni Kullanıcı</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Kullanıcı Adı <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="fUsername" placeholder="örn: tahsilat1" autocomplete="off">
+          <div class="form-text text-muted" id="usernameHint"></div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">OTP Telefon <span class="text-danger">*</span></label>
+          <input type="tel" class="form-control" id="fPhone" placeholder="05345185718">
+          <div class="form-text text-muted">Giriş yapıldığında bu numaraya doğrulama kodu gider</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Şifre</label>
+          <input type="password" class="form-control" id="fPassword" placeholder="Yeni şifre (boş bırakılırsa değişmez)" autocomplete="new-password">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Rol</label>
+          <select class="form-select" id="fRole">
+            <option value="user">Kullanıcı</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div id="modalErr" class="alert alert-danger py-2" style="display:none"></div>
+      </div>
+      <div class="modal-footer" style="border-color:var(--border-color)">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">İptal</button>
+        <button type="button" class="btn btn-primary" id="saveBtn">
+          <i class="bi bi-check-lg me-1"></i>Kaydet
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-container"></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/api.js"></script>
+<script>
+APP.init();
+
+const modal    = new bootstrap.Modal(document.getElementById('userModal'));
+let editingUser = null; // düzenleme modunda kullanıcı adı
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function roleLabel(role) {
+  return role === 'admin'
+    ? '<span class="badge-status delivered"><i class="bi bi-shield-fill-check"></i> Admin</span>'
+    : '<span class="badge-status sending"><i class="bi bi-person-fill"></i> Kullanıcı</span>';
+}
+
+function formatPhone(p) {
+  if (!p) return '—';
+  // 905345185718 → 0534 518 57 18
+  const n = String(p).replace(/\D/g,'');
+  if (n.startsWith('90') && n.length === 12) {
+    const local = '0' + n.slice(2);
+    return local.replace(/(\d{4})(\d{3})(\d{2})(\d{2})/, '$1 $2 $3 $4');
+  }
+  return p;
+}
+
+async function loadUsers() {
+  const tbody = document.getElementById('usersBody');
+  const res = await API.getUsers();
+  if (!res || res.error) {
+    tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-4">${esc(res?.error || 'Yüklenemedi')}</td></tr>`;
+    return;
+  }
+  const list = res.list || [];
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">Henüz kullanıcı yok.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(u => `
+    <tr>
+      <td><i class="bi bi-person-circle me-2" style="color:var(--accent-1)"></i><strong>${esc(u.username)}</strong></td>
+      <td><code>${formatPhone(u.phone)}</code></td>
+      <td>${roleLabel(u.role)}</td>
+      <td>
+        <div class="d-flex gap-1">
+          <button class="btn btn-outline-secondary btn-sm" onclick="openEdit('${esc(u.username)}','${esc(u.phone)}','${esc(u.role)}')" title="Düzenle">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="btn btn-outline-danger btn-sm" onclick="confirmDelete('${esc(u.username)}')" title="Sil">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function openAdd() {
+  editingUser = null;
+  document.getElementById('modalTitle').textContent   = 'Yeni Kullanıcı';
+  document.getElementById('fUsername').value          = '';
+  document.getElementById('fUsername').disabled       = false;
+  document.getElementById('usernameHint').textContent = '';
+  document.getElementById('fPhone').value             = '';
+  document.getElementById('fPassword').value          = '';
+  document.getElementById('fPassword').placeholder    = 'Şifre (zorunlu)';
+  document.getElementById('fRole').value              = 'user';
+  document.getElementById('modalErr').style.display   = 'none';
+  modal.show();
+}
+
+function openEdit(username, phone, role) {
+  editingUser = username;
+  document.getElementById('modalTitle').textContent   = 'Kullanıcıyı Düzenle';
+  document.getElementById('fUsername').value          = username;
+  document.getElementById('fUsername').disabled       = true;
+  document.getElementById('usernameHint').textContent = 'Kullanıcı adı değiştirilemez';
+  document.getElementById('fPhone').value             = phone;
+  document.getElementById('fPassword').value          = '';
+  document.getElementById('fPassword').placeholder    = 'Yeni şifre (boş bırakılırsa değişmez)';
+  document.getElementById('fRole').value              = role || 'user';
+  document.getElementById('modalErr').style.display   = 'none';
+  modal.show();
+}
+
+async function saveUser() {
+  const btn = document.getElementById('saveBtn');
+  const err = document.getElementById('modalErr');
+  err.style.display = 'none';
+
+  const username = document.getElementById('fUsername').value.trim();
+  const phone    = document.getElementById('fPhone').value.trim();
+  const password = document.getElementById('fPassword').value;
+  const role     = document.getElementById('fRole').value;
+
+  if (!username) { showErr('Kullanıcı adı zorunludur.'); return; }
+  if (!phone)    { showErr('Telefon numarası zorunludur.'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+  const res = await API.saveUser({ username, password: password || undefined, phone, role });
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Kaydet';
+
+  if (res?.error) { showErr(res.error); return; }
+  if (!res?.ok)   { showErr('Beklenmeyen hata.'); return; }
+
+  modal.hide();
+  APP.toast('Kullanıcı kaydedildi.', 'success');
+  loadUsers();
+}
+
+async function confirmDelete(username) {
+  if (!confirm(`"${username}" kullanıcısını silmek istediğinize emin misiniz?`)) return;
+
+  const res = await API.deleteUser(username);
+  if (res?.error) { APP.toast(res.error, 'danger'); return; }
+  APP.toast('Kullanıcı silindi.', 'info');
+  loadUsers();
+}
+
+function showErr(msg) {
+  const el = document.getElementById('modalErr');
+  el.textContent    = msg;
+  el.style.display  = '';
+}
+
+document.getElementById('addBtn').addEventListener('click', openAdd);
+document.getElementById('saveBtn').addEventListener('click', saveUser);
+
+loadUsers();
+</script>
+</body>
+</html>

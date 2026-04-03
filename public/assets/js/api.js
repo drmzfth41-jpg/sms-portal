@@ -55,4 +55,9 @@ const API = {
   getPackageItems(params) { return this.post('/api/package-items',  params); },
   cancelPackage(id)       { return this.post('/api/cancel',         { id }); },
   getNumberHistory(data)  { return this.post('/api/number-history', data); },
+
+  // ─── Kullanıcı yönetimi ──────────────────────────────────
+  getUsers()             { return this.get('/api/users-list'); },
+  saveUser(data)         { return this.post('/api/users-save',   data); },
+  deleteUser(username)   { return this.post('/api/users-delete', { username }); },
 };
