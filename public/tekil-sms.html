@@ -58,7 +58,7 @@
     <div class="page-content">
       <div class="page-header">
         <h1><i class="bi bi-send me-2" style="color:var(--accent-1)"></i>Tekil SMS</h1>
-        <p>Tek bir numaraya SMS gönderin</p>
+        <p>Bir veya birkaç numaraya SMS gönderin</p>
       </div>
 
       <div class="row g-4">
@@ -75,15 +75,19 @@
                     </select>
                   </div>
                   <div class="col-sm-6">
-                    <label class="form-label">Alıcı Numara <span class="text-danger">*</span></label>
-                    <div class="input-group">
-                      <span class="input-group-text" style="background:var(--bg-input);border-color:var(--border);color:var(--text-dim)">
-                        <i class="bi bi-telephone"></i>
-                      </span>
-                      <input type="text" class="form-control" id="number"
-                             placeholder="905XXXXXXXXX" maxlength="15">
+                    <label class="form-label">Alıcı Numara(lar) <span class="text-danger">*</span></label>
+                    <div id="numberInputs">
+                      <div class="input-group mb-1">
+                        <span class="input-group-text" style="background:var(--bg-input);border-color:var(--border);color:var(--text-dim)">
+                          <i class="bi bi-telephone"></i>
+                        </span>
+                        <input type="text" class="form-control number-input" placeholder="905XXXXXXXXX" maxlength="15">
+                        <button type="button" class="btn btn-outline-secondary add-number-btn" title="Numara ekle">
+                          <i class="bi bi-plus-lg"></i>
+                        </button>
+                      </div>
                     </div>
-                    <div class="form-text" style="color:var(--text-dim)">Başında 90 ile, boşluksuz</div>
+                    <div class="form-text" style="color:var(--text-dim)">05XX veya 905XX formatında yazabilirsiniz</div>
                   </div>
                   <div class="col-12">
                     <label class="form-label">Mesaj İçeriği <span class="text-danger">*</span></label>
@@ -162,10 +166,44 @@
 APP.init();
 initSmsCounter('content', 'smsCounter');
 
+// ── Çoklu numara yönetimi ─────────────────────────────────────────────────
+function addNumberRow(value = '') {
+  const wrap = document.getElementById('numberInputs');
+  const div  = document.createElement('div');
+  div.className = 'input-group mb-1';
+  div.innerHTML = `
+    <span class="input-group-text" style="background:var(--bg-input);border-color:var(--border);color:var(--text-dim)">
+      <i class="bi bi-telephone"></i>
+    </span>
+    <input type="text" class="form-control number-input" placeholder="905XXXXXXXXX" maxlength="15" value="${value}">
+    <button type="button" class="btn btn-outline-danger remove-number-btn" title="Kaldır">
+      <i class="bi bi-dash-lg"></i>
+    </button>`;
+  div.querySelector('.remove-number-btn').addEventListener('click', () => {
+    div.remove();
+    updateAddBtn();
+  });
+  wrap.appendChild(div);
+  updateAddBtn();
+}
+
+function updateAddBtn() {
+  // İlk satırdaki + butonunu sadece tek satır varsa göster
+  const rows = document.querySelectorAll('#numberInputs .input-group');
+  rows.forEach((row, i) => {
+    const addBtn = row.querySelector('.add-number-btn');
+    if (addBtn) addBtn.style.display = i === rows.length - 1 ? '' : 'none';
+  });
+}
+
+document.getElementById('numberInputs').addEventListener('click', function(e) {
+  if (e.target.closest('.add-number-btn')) addNumberRow();
+});
+
 // URL param ile gelen numara/içerik doldur (numara-sorgula'dan yönlendirme)
 (function() {
   const p = new URLSearchParams(location.search);
-  if (p.get('number'))  document.getElementById('number').value  = p.get('number');
+  if (p.get('number')) document.querySelector('.number-input').value = p.get('number');
   if (p.get('content')) {
     document.getElementById('content').value = decodeURIComponent(p.get('content'));
     const pre = document.getElementById('preview');
@@ -254,40 +292,56 @@ renderTemplates();
 // Form gönder
 document.getElementById('smsForm').addEventListener('submit', async function (e) {
   e.preventDefault();
-  const number  = APP.normalizePhone(document.getElementById('number').value.trim());
   const content = document.getElementById('content').value.trim();
   const sender  = document.getElementById('sender').value;
+  if (!content) { APP.toast('Mesaj içeriği boş olamaz.', 'warning'); return; }
 
-  if (!number || number.length < 10) { APP.toast('Geçerli bir numara girin.', 'warning'); return; }
-  if (!content)                       { APP.toast('Mesaj içeriği boş olamaz.', 'warning'); return; }
+  // Tüm numara inputlarını topla
+  const numbers = Array.from(document.querySelectorAll('.number-input'))
+    .map(i => APP.normalizePhone(i.value.trim()))
+    .filter(n => n && n.length >= 10);
+
+  if (!numbers.length) { APP.toast('En az bir geçerli numara girin.', 'warning'); return; }
 
   const btn = document.getElementById('sendBtn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Gönderiliyor…';
 
   const sendingDateVal = document.getElementById('sendingDate').value;
-
-  const res = await API.sendSingle({
-    number,
+  const payload = {
     content,
     sender,
     validity:    parseInt(document.getElementById('validity').value) || 60,
     commercial:  false,
     sendingDate: sendingDateVal ? sendingDateVal.replace('T', ' ') : null,
-  });
+  };
+
+  document.getElementById('resultPlaceholder').style.display = 'none';
+
+  if (numbers.length === 1) {
+    // Tekil
+    const res = await API.sendSingle({ ...payload, number: numbers[0] });
+    const isErr = !!res?.err;
+    showResult('resultBox', res, isErr);
+    APP.toast(isErr
+      ? 'Gönderim başarısız: ' + (res.err.message || '')
+      : 'SMS gönderildi! Paket ID: ' + (res.pkgID || res.id || '—'),
+      isErr ? 'error' : 'success');
+  } else {
+    // Toplu — her numaraya ayrı istek
+    let ok = 0, fail = 0;
+    const results = [];
+    for (const num of numbers) {
+      const res = await API.sendSingle({ ...payload, number: num });
+      if (res?.err) { fail++; } else { ok++; }
+      results.push({ num, res });
+    }
+    showResult('resultBox', results.map(r => `${r.num}: ${r.res?.err ? '✗ ' + r.res.err.message : '✓ ' + (r.res?.pkgID || 'OK')}`).join('\n'), false);
+    APP.toast(`${ok} başarılı, ${fail} başarısız gönderildi.`, fail ? 'warning' : 'success');
+  }
 
   btn.disabled = false;
   btn.innerHTML = '<i class="bi bi-send me-2"></i>SMS Gönder';
-
-  document.getElementById('resultPlaceholder').style.display = 'none';
-  const isErr = !!res?.err;
-  showResult('resultBox', res, isErr);
-
-  if (isErr) {
-    APP.toast('Gönderim başarısız: ' + (res.err.message || ''), 'error');
-  } else {
-    APP.toast('SMS başarıyla gönderildi! Paket ID: ' + (res.pkgID || res.id || '—'), 'success');
-  }
 });
 </script>
 </body>
