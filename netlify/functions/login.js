@@ -43,7 +43,7 @@ async function sendOtpSms(otp, phone) {
     title: sender, sender,
     content: `SMS Portal giris kodunuz: ${otp}. 5 dakika gecerlidir.`,
     number: phone.replace(/\D/g, ''),
-    encoding: 1, validity: 5,
+    encoding: 1,
     commercial: false,
     sendingDate: null, periodicSettings: null, pushSettings: null,
   });
