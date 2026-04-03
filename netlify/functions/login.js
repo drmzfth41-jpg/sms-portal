@@ -2,14 +2,13 @@ const crypto = require('crypto');
 const { createToken, respond, handleCors, izbilFetch } = require('./_helpers');
 const { getUser, ensureAdminExists, hashPassword } = require('./_users');
 
-// Rate limiter
-const attempts = new Map();
+const SECRET       = process.env.JWT_SECRET || 'sms-portal-dev-secret';
+const OTP_TTL_MS   = 5 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
 const BLOCK_MS     = 15 * 60 * 1000;
 
-// OTP sessions (bellek içi, 5 dk geçerli)
-const otpSessions = new Map();
-const OTP_TTL_MS  = 5 * 60 * 1000;
+// Rate limiter (bellek içi — sadece aynı container'da geçerli, yeterli)
+const attempts = new Map();
 
 function getIp(event) {
   return (event.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
@@ -32,6 +31,20 @@ function recordFail(ip) {
 
 function generateOtp() {
   return Array.from(crypto.randomBytes(6)).map(b => b % 10).join('');
+}
+
+/**
+ * OTP session — stateless imzalı token (serverless-safe).
+ * Bellek Map'e gerek yok; verify-otp imzayı doğrulayarak içeriği okur.
+ */
+function createOtpSession(otp, username) {
+  const data = Buffer.from(JSON.stringify({
+    otp,
+    username,
+    expiresAt: Date.now() + OTP_TTL_MS,
+  })).toString('base64url');
+  const sig = crypto.createHmac('sha256', SECRET).update(data).digest('base64url');
+  return `${data}.${sig}`;
 }
 
 async function sendOtpSms(otp, phone) {
@@ -61,12 +74,9 @@ exports.handler = async (event) => {
   try {
     const { username, password } = JSON.parse(event.body || '{}');
 
-    // İlk çalıştırmada admin yoksa env'den oluştur
     await ensureAdminExists();
-
     const userRecord = await getUser(username);
 
-    // Blobs çalışıyorsa Blobs'tan doğrula, yoksa env var'a fallback
     let authOk = false;
     let otpPhone = '';
 
@@ -74,7 +84,7 @@ exports.handler = async (event) => {
       authOk   = hashPassword(password, userRecord.salt) === userRecord.passwordHash;
       otpPhone = userRecord.phone;
     } else {
-      // Blobs henüz yok veya hata — env var'a düş
+      // Blobs henüz yok veya hata — env var'a fallback
       const APP_USER = process.env.APP_USER || 'admin';
       const APP_PASS = process.env.APP_PASS || '';
       authOk   = username === APP_USER && password === APP_PASS;
@@ -90,15 +100,9 @@ exports.handler = async (event) => {
       });
     }
 
-    // Kimlik doğrulama başarılı — OTP üret ve gönder
     attempts.delete(ip);
     const otp       = generateOtp();
-    const sessionId = crypto.randomBytes(16).toString('hex');
-    otpSessions.set(sessionId, {
-      otp,
-      expiresAt: Date.now() + OTP_TTL_MS,
-      username,
-    });
+    const sessionId = createOtpSession(otp, username);
 
     const smsResult = await sendOtpSms(otp, otpPhone);
     if (smsResult?.err) {
@@ -112,6 +116,6 @@ exports.handler = async (event) => {
   }
 };
 
-// verify-otp için export
-module.exports.otpSessions = otpSessions;
-module.exports.createToken = createToken;
+// createOtpSession'ı verify-otp için export et
+module.exports.createOtpSession = createOtpSession;
+module.exports.createToken      = createToken;
