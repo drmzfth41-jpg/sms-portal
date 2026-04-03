@@ -51,7 +51,8 @@ const API = {
   sendMulti(data)         { return this.post('/api/send-multi',    data); },
   sendDynamic(data)       { return this.post('/api/send-dynamic',  data); },
   sendOtp(data)           { return this.post('/api/send-otp',      data); },
-  getPackages(params)     { return this.post('/api/packages',      params); },
-  getPackageItems(params) { return this.post('/api/package-items', params); },
-  cancelPackage(id)       { return this.post('/api/cancel',        { id }); },
+  getPackages(params)     { return this.post('/api/packages',       params); },
+  getPackageItems(params) { return this.post('/api/package-items',  params); },
+  cancelPackage(id)       { return this.post('/api/cancel',         { id }); },
+  getNumberHistory(data)  { return this.post('/api/number-history', data); },
 };

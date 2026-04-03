@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Numara Sorgula — SMS Portal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="assets/css/style.css" rel="stylesheet">
+  <style>
+    .history-row { cursor: default; transition: background .15s; }
+    .history-row:hover { background: var(--bg-input); }
+    .sms-content-cell {
+      max-width: 320px; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+      font-size: .825rem; color: var(--text-muted);
+    }
+    .badge-state { font-size: .7rem; padding: .25rem .55rem; border-radius: 20px; }
+    .state-delivered  { background: rgba(34,197,94,.15);  color: #16a34a; }
+    .state-undelivered{ background: rgba(239,68,68,.15);  color: #dc2626; }
+    .state-pending    { background: rgba(234,179, 8,.15); color: #ca8a04; }
+    .state-sent       { background: rgba(59,130,246,.15); color: #2563eb; }
+    .stat-card { text-align: center; padding: 1rem; border-radius: 10px; background: var(--bg-input); }
+    .stat-card .num { font-size: 1.75rem; font-weight: 700; }
+    .stat-card .lbl { font-size: .75rem; color: var(--text-muted); }
+    .search-wrap { position: relative; }
+    .search-wrap .bi-search { position: absolute; left: .9rem; top: 50%; transform: translateY(-50%); color: var(--text-dim); pointer-events: none; }
+    .search-wrap input { padding-left: 2.4rem; }
+    .expand-btn { background: none; border: none; padding: 0; color: var(--text-dim); }
+    .expand-btn:hover { color: var(--text-primary); }
+    .sms-full { white-space: pre-wrap; word-break: break-word; font-size: .825rem; margin-top: .4rem; color: var(--text-muted); display: none; }
+    .sms-full.show { display: block; }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><i class="bi bi-chat-dots-fill"></i><span>SMS Portal</span></div>
+    <ul class="sidebar-nav list-unstyled mb-0">
+      <li><span class="nav-section">GENEL</span></li>
+      <li><a href="dashboard.html"      class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
+      <li><a href="gonderici.html"      class="nav-link"><i class="bi bi-person-badge"></i><span>Gönderici Başlıkları</span></a></li>
+      <li><span class="nav-section mt-3">SMS GÖNDER</span></li>
+      <li><a href="tekil-sms.html"      class="nav-link"><i class="bi bi-send"></i><span>Tekil SMS</span></a></li>
+      <li><a href="toplu-sms.html"      class="nav-link"><i class="bi bi-send-fill"></i><span>Toplu SMS</span></a></li>
+      <li><a href="dinamik-sms.html"    class="nav-link"><i class="bi bi-magic"></i><span>Dinamik SMS</span></a></li>
+      <li><a href="otp-sms.html"        class="nav-link"><i class="bi bi-shield-lock"></i><span>OTP / Doğrulama</span></a></li>
+      <li><span class="nav-section mt-3">SORGULA</span></li>
+      <li><a href="numara-sorgula.html" class="nav-link active"><i class="bi bi-telephone-inbound"></i><span>Numara Sorgula</span></a></li>
+      <li><span class="nav-section mt-3">RAPORLAR</span></li>
+      <li><a href="raporlar.html"       class="nav-link"><i class="bi bi-bar-chart-line"></i><span>Gönderim Raporları</span></a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <a href="#" class="nav-link" data-logout><i class="bi bi-box-arrow-right"></i><span>Çıkış Yap</span></a>
+    </div>
+  </nav>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="main-content">
+    <nav class="topbar">
+      <div class="topbar-left">
+        <button class="sidebar-toggle" id="sidebarToggle"><i class="bi bi-list"></i></button>
+      </div>
+      <div class="topbar-right">
+        <span class="credit-badge"><i class="bi bi-credit-card"></i><span id="creditValue">…</span> kredi</span>
+        <div class="dropdown">
+          <button class="dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-person-circle fs-5"></i></button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item text-danger" href="#" data-logout><i class="bi bi-box-arrow-right"></i>Çıkış Yap</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="page-content">
+      <div class="page-header">
+        <h1><i class="bi bi-telephone-inbound me-2" style="color:var(--accent-1)"></i>Numara Sorgula</h1>
+        <p>Bir telefon numarasına gönderilen tüm SMS geçmişini görüntüleyin</p>
+      </div>
+
+      <!-- Arama formu -->
+      <div class="card mb-4">
+        <div class="card-body">
+          <form id="searchForm" class="row g-3 align-items-end">
+            <div class="col-md-5">
+              <label class="form-label">Telefon Numarası <span class="text-danger">*</span></label>
+              <div class="search-wrap">
+                <i class="bi bi-search"></i>
+                <input type="text" class="form-control" id="phoneInput"
+                       placeholder="5345185718 veya 905345185718"
+                       inputmode="tel" autofocus>
+              </div>
+              <div class="form-text" id="normalizedHint" style="color:var(--accent-1)"></div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Başlangıç Tarihi</label>
+              <input type="date" class="form-control" id="startDate">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Bitiş Tarihi</label>
+              <input type="date" class="form-control" id="finishDate">
+            </div>
+            <div class="col-md-1">
+              <button type="submit" class="btn btn-primary w-100" id="searchBtn">
+                <i class="bi bi-search"></i>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- İstatistikler -->
+      <div class="row g-3 mb-4" id="statsRow" style="display:none">
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="num" id="statTotal">0</div>
+            <div class="lbl">Toplam SMS</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="num" style="color:#16a34a" id="statDelivered">0</div>
+            <div class="lbl">İletilen</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="num" style="color:#dc2626" id="statFailed">0</div>
+            <div class="lbl">İletilemeyen</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="num" style="color:#2563eb" id="statRate">—</div>
+            <div class="lbl">İletim Oranı</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sonuç tablosu -->
+      <div class="card" id="resultCard" style="display:none">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-clock-history"></i>
+            <h6 id="resultTitle">SMS Geçmişi</h6>
+          </div>
+          <button class="btn btn-outline-secondary btn-sm" id="exportBtn">
+            <i class="bi bi-download me-1"></i>CSV İndir
+          </button>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" style="font-size:.85rem">
+              <thead style="background:var(--bg-input)">
+                <tr>
+                  <th style="padding:.75rem 1rem;color:var(--text-muted);font-weight:600">Tarih</th>
+                  <th style="padding:.75rem 1rem;color:var(--text-muted);font-weight:600">Gönderici</th>
+                  <th style="padding:.75rem 1rem;color:var(--text-muted);font-weight:600">İçerik</th>
+                  <th style="padding:.75rem 1rem;color:var(--text-muted);font-weight:600">Durum</th>
+                  <th style="padding:.75rem 1rem;color:var(--text-muted);font-weight:600">İşlem</th>
+                </tr>
+              </thead>
+              <tbody id="historyBody"></tbody>
+            </table>
+          </div>
+          <div id="emptyState" class="text-center py-5" style="display:none">
+            <i class="bi bi-inbox" style="font-size:2.5rem;color:var(--text-dim)"></i>
+            <p class="mt-2 mb-0" style="color:var(--text-muted)">Bu numaraya gönderilmiş SMS bulunamadı.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Yükleniyor -->
+      <div class="text-center py-5" id="loadingState" style="display:none">
+        <div class="spinner-border" style="color:var(--accent-1)"></div>
+        <p class="mt-3" style="color:var(--text-muted)">Geçmiş aranıyor, lütfen bekleyin…</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-container"></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/api.js"></script>
+<script>
+APP.init();
+
+let lastResults = [];
+
+// Numara normalize hint
+document.getElementById('phoneInput').addEventListener('input', function () {
+  const val = this.value.trim();
+  if (!val) { document.getElementById('normalizedHint').textContent = ''; return; }
+  const norm = APP.normalizePhone(val);
+  document.getElementById('normalizedHint').textContent = norm !== val ? `→ ${norm} olarak aranacak` : '';
+});
+
+function stateBadge(state) {
+  if (!state && state !== 0) return '<span class="badge-state state-pending">Bekliyor</span>';
+  const s = String(state).toLowerCase();
+  if (s === '1' || s === 'delivered')   return '<span class="badge-state state-delivered">İletildi</span>';
+  if (s === '2' || s === 'undelivered') return '<span class="badge-state state-undelivered">İletilmedi</span>';
+  if (s === '0' || s === 'sent')        return '<span class="badge-state state-sent">Gönderildi</span>';
+  return `<span class="badge-state state-pending">${state}</span>`;
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d);
+  if (isNaN(dt)) return d;
+  return dt.toLocaleString('tr-TR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+function renderResults(list, target) {
+  const body = document.getElementById('historyBody');
+  const empty = document.getElementById('emptyState');
+  body.innerHTML = '';
+
+  if (!list.length) {
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+
+  // İstatistik hesapla
+  const delivered   = list.filter(r => String(r.state) === '1' || String(r.state).toLowerCase() === 'delivered').length;
+  const undelivered = list.filter(r => String(r.state) === '2' || String(r.state).toLowerCase() === 'undelivered').length;
+  const rate        = list.length ? Math.round(delivered / list.length * 100) : 0;
+
+  document.getElementById('statTotal').textContent     = list.length;
+  document.getElementById('statDelivered').textContent = delivered;
+  document.getElementById('statFailed').textContent    = undelivered;
+  document.getElementById('statRate').textContent      = `%${rate}`;
+  document.getElementById('statsRow').style.display    = '';
+
+  // Tablo satırları
+  list.forEach((row, idx) => {
+    const content = row.content || row.message || '—';
+    const tr = document.createElement('tr');
+    tr.className = 'history-row';
+    tr.innerHTML = `
+      <td style="padding:.7rem 1rem;white-space:nowrap;color:var(--text-muted)">${formatDate(row.createDate || row.sendDate)}</td>
+      <td style="padding:.7rem 1rem;font-weight:500">${row.sender || row.pkgTitle || '—'}</td>
+      <td style="padding:.7rem 1rem">
+        <div class="sms-content-cell" id="short-${idx}">${content}</div>
+        <div class="sms-full" id="full-${idx}">${content}</div>
+      </td>
+      <td style="padding:.7rem 1rem">${stateBadge(row.state)}</td>
+      <td style="padding:.7rem 1rem">
+        <button class="expand-btn" onclick="toggleContent(${idx})" title="İçeriği genişlet">
+          <i class="bi bi-chevron-down" id="chev-${idx}"></i>
+        </button>
+        <button class="expand-btn ms-2" onclick="resend(${idx})" title="Bu numaraya SMS gönder">
+          <i class="bi bi-send" style="color:var(--accent-1)"></i>
+        </button>
+      </td>`;
+    body.appendChild(tr);
+  });
+
+  document.getElementById('resultTitle').textContent = `${target} — ${list.length} SMS`;
+  document.getElementById('resultCard').style.display = '';
+}
+
+function toggleContent(idx) {
+  const full  = document.getElementById(`full-${idx}`);
+  const short = document.getElementById(`short-${idx}`);
+  const chev  = document.getElementById(`chev-${idx}`);
+  const open  = full.classList.toggle('show');
+  short.style.display = open ? 'none' : '';
+  chev.className = open ? 'bi bi-chevron-up' : 'bi bi-chevron-down';
+}
+
+function resend(idx) {
+  const row = lastResults[idx];
+  if (!row) return;
+  const num = document.getElementById('phoneInput').value.trim();
+  const content = encodeURIComponent(row.content || row.message || '');
+  window.location.href = `/tekil-sms.html?number=${APP.normalizePhone(num)}&content=${content}`;
+}
+
+document.getElementById('searchForm').addEventListener('submit', async function (e) {
+  e.preventDefault();
+  const raw = document.getElementById('phoneInput').value.trim();
+  if (!raw) { APP.toast('Numara giriniz.', 'warning'); return; }
+
+  document.getElementById('loadingState').style.display  = '';
+  document.getElementById('resultCard').style.display    = 'none';
+  document.getElementById('statsRow').style.display      = 'none';
+
+  const btn = document.getElementById('searchBtn');
+  btn.disabled = true;
+
+  const res = await API.getNumberHistory({
+    number:     raw,
+    startDate:  document.getElementById('startDate').value  || null,
+    finishDate: document.getElementById('finishDate').value || null,
+  });
+
+  document.getElementById('loadingState').style.display = 'none';
+  btn.disabled = false;
+
+  if (res?.err) {
+    APP.toast('Sorgu hatası: ' + (res.err.message || ''), 'error');
+    return;
+  }
+
+  lastResults = res.list || [];
+  renderResults(lastResults, res.target || APP.normalizePhone(raw));
+
+  if (!lastResults.length) {
+    APP.toast('Bu numaraya gönderilmiş SMS bulunamadı.', 'info');
+  }
+});
+
+// CSV export
+document.getElementById('exportBtn').addEventListener('click', function () {
+  if (!lastResults.length) return;
+  const rows = [['Tarih','Gönderici','İçerik','Durum']];
+  lastResults.forEach(r => {
+    const state = String(r.state) === '1' ? 'İletildi' : String(r.state) === '2' ? 'İletilmedi' : 'Bekliyor';
+    rows.push([
+      formatDate(r.createDate || r.sendDate),
+      r.sender || r.pkgTitle || '',
+      (r.content || r.message || '').replace(/"/g, '""'),
+      state,
+    ]);
+  });
+  const csv  = '\uFEFF' + rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `sms-gecmis-${document.getElementById('phoneInput').value.trim()}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+});
+</script>
+</body>
+</html>

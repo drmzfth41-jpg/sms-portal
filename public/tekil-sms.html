@@ -21,6 +21,8 @@
       <li><a href="toplu-sms.html"   class="nav-link"><i class="bi bi-send-fill"></i><span>Toplu SMS</span></a></li>
       <li><a href="dinamik-sms.html" class="nav-link"><i class="bi bi-magic"></i><span>Dinamik SMS</span></a></li>
       <li><a href="otp-sms.html"     class="nav-link"><i class="bi bi-shield-lock"></i><span>OTP / Doğrulama</span></a></li>
+      <li><span class="nav-section mt-3">SORGULA</span></li>
+      <li><a href="numara-sorgula.html" class="nav-link"><i class="bi bi-telephone-inbound"></i><span>Numara Sorgula</span></a></li>
       <li><span class="nav-section mt-3">RAPORLAR</span></li>
       <li><a href="raporlar.html"    class="nav-link"><i class="bi bi-bar-chart-line"></i><span>Gönderim Raporları</span></a></li>
     </ul>
@@ -158,6 +160,18 @@
 APP.init();
 initSmsCounter('content', 'smsCounter');
 
+// URL param ile gelen numara/içerik doldur (numara-sorgula'dan yönlendirme)
+(function() {
+  const p = new URLSearchParams(location.search);
+  if (p.get('number'))  document.getElementById('number').value  = p.get('number');
+  if (p.get('content')) {
+    document.getElementById('content').value = decodeURIComponent(p.get('content'));
+    const pre = document.getElementById('preview');
+    pre.textContent = document.getElementById('content').value;
+    pre.style.color = 'var(--text-primary)';
+  }
+})();
+
 // İçerik önizleme
 document.getElementById('content').addEventListener('input', function () {
   const pre = document.getElementById('preview');
@@ -238,7 +252,7 @@ renderTemplates();
 // Form gönder
 document.getElementById('smsForm').addEventListener('submit', async function (e) {
   e.preventDefault();
-  const number  = document.getElementById('number').value.trim().replace(/\D/g,'');
+  const number  = APP.normalizePhone(document.getElementById('number').value.trim());
   const content = document.getElementById('content').value.trim();
   const sender  = document.getElementById('sender').value;
 

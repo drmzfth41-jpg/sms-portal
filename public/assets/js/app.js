@@ -22,6 +22,15 @@ const APP = {
     window.location.href = '/login.html';
   },
 
+  // ─── Telefon normalize (5XX / 05XX / 905XX → 905XXXXXXXXX) ──
+  normalizePhone(raw) {
+    let n = String(raw).replace(/\D/g, '');
+    if (n.startsWith('90') && n.length === 12) return n;
+    if (n.startsWith('0')  && n.length === 11) return '9' + n;
+    if (n.startsWith('5')  && n.length === 10) return '90' + n;
+    return n;
+  },
+
   // ─── Toast ────────────────────────────────────────────────
   toast(message, type = 'info', title = null) {
     const icons = {
