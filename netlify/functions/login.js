@@ -66,7 +66,22 @@ exports.handler = async (event) => {
 
     const userRecord = await getUser(username);
 
-    if (!userRecord || hashPassword(password, userRecord.salt) !== userRecord.passwordHash) {
+    // Blobs çalışıyorsa Blobs'tan doğrula, yoksa env var'a fallback
+    let authOk = false;
+    let otpPhone = '';
+
+    if (userRecord) {
+      authOk   = hashPassword(password, userRecord.salt) === userRecord.passwordHash;
+      otpPhone = userRecord.phone;
+    } else {
+      // Blobs henüz yok veya hata — env var'a düş
+      const APP_USER = process.env.APP_USER || 'admin';
+      const APP_PASS = process.env.APP_PASS || '';
+      authOk   = username === APP_USER && password === APP_PASS;
+      otpPhone = process.env.OTP_PHONE || '';
+    }
+
+    if (!authOk) {
       recordFail(ip);
       const e    = attempts.get(ip);
       const left = e ? Math.max(0, MAX_ATTEMPTS - e.count) : MAX_ATTEMPTS;
@@ -85,7 +100,7 @@ exports.handler = async (event) => {
       username,
     });
 
-    const smsResult = await sendOtpSms(otp, userRecord.phone);
+    const smsResult = await sendOtpSms(otp, otpPhone);
     if (smsResult?.err) {
       console.error('OTP SMS gönderilemedi:', smsResult.err);
     }
