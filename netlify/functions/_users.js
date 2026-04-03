@@ -48,7 +48,7 @@ async function listUsers() {
 }
 
 async function saveUser(data) {
-  await store().setJSON(data.username, data);
+  await store().set(data.username, JSON.stringify(data));
 }
 
 async function deleteUser(username) {
@@ -68,13 +68,13 @@ async function ensureAdminExists() {
     const phone    = normalizePhone(process.env.OTP_PHONE || '');
     const salt     = generateSalt();
 
-    await store().setJSON(username, {
+    await store().set(username, JSON.stringify({
       username,
       passwordHash: hashPassword(password, salt),
       salt,
       phone,
       role: 'admin',
-    });
+    }));
 
     console.log(`[_users] İlk admin oluşturuldu: ${username}`);
   } catch (e) {

@@ -76,18 +76,9 @@
                   </div>
                   <div class="col-sm-6">
                     <label class="form-label">Alıcı Numara(lar) <span class="text-danger">*</span></label>
-                    <div id="numberInputs">
-                      <div class="input-group mb-1">
-                        <span class="input-group-text" style="background:var(--bg-input);border-color:var(--border);color:var(--text-dim)">
-                          <i class="bi bi-telephone"></i>
-                        </span>
-                        <input type="text" class="form-control number-input" placeholder="905XXXXXXXXX" maxlength="15">
-                        <button type="button" class="btn btn-outline-secondary add-number-btn" title="Numara ekle">
-                          <i class="bi bi-plus-lg"></i>
-                        </button>
-                      </div>
-                    </div>
-                    <div class="form-text" style="color:var(--text-dim)">05XX veya 905XX formatında yazabilirsiniz</div>
+                    <textarea class="form-control" id="numbersArea" rows="3"
+                      placeholder="905XXXXXXXXX&#10;905XXXXXXXXX&#10;(her satıra bir numara)"></textarea>
+                    <div class="form-text" style="color:var(--text-dim)">Her satıra bir numara — 05XX veya 905XX</div>
                   </div>
                   <div class="col-12">
                     <label class="form-label">Mesaj İçeriği <span class="text-danger">*</span></label>
@@ -166,44 +157,10 @@
 APP.init();
 initSmsCounter('content', 'smsCounter');
 
-// ── Çoklu numara yönetimi ─────────────────────────────────────────────────
-function addNumberRow(value = '') {
-  const wrap = document.getElementById('numberInputs');
-  const div  = document.createElement('div');
-  div.className = 'input-group mb-1';
-  div.innerHTML = `
-    <span class="input-group-text" style="background:var(--bg-input);border-color:var(--border);color:var(--text-dim)">
-      <i class="bi bi-telephone"></i>
-    </span>
-    <input type="text" class="form-control number-input" placeholder="905XXXXXXXXX" maxlength="15" value="${value}">
-    <button type="button" class="btn btn-outline-danger remove-number-btn" title="Kaldır">
-      <i class="bi bi-dash-lg"></i>
-    </button>`;
-  div.querySelector('.remove-number-btn').addEventListener('click', () => {
-    div.remove();
-    updateAddBtn();
-  });
-  wrap.appendChild(div);
-  updateAddBtn();
-}
-
-function updateAddBtn() {
-  // İlk satırdaki + butonunu sadece tek satır varsa göster
-  const rows = document.querySelectorAll('#numberInputs .input-group');
-  rows.forEach((row, i) => {
-    const addBtn = row.querySelector('.add-number-btn');
-    if (addBtn) addBtn.style.display = i === rows.length - 1 ? '' : 'none';
-  });
-}
-
-document.getElementById('numberInputs').addEventListener('click', function(e) {
-  if (e.target.closest('.add-number-btn')) addNumberRow();
-});
-
 // URL param ile gelen numara/içerik doldur (numara-sorgula'dan yönlendirme)
 (function() {
   const p = new URLSearchParams(location.search);
-  if (p.get('number')) document.querySelector('.number-input').value = p.get('number');
+  if (p.get('number')) document.getElementById('numbersArea').value = p.get('number');
   if (p.get('content')) {
     document.getElementById('content').value = decodeURIComponent(p.get('content'));
     const pre = document.getElementById('preview');
@@ -296,9 +253,10 @@ document.getElementById('smsForm').addEventListener('submit', async function (e)
   const sender  = document.getElementById('sender').value;
   if (!content) { APP.toast('Mesaj içeriği boş olamaz.', 'warning'); return; }
 
-  // Tüm numara inputlarını topla
-  const numbers = Array.from(document.querySelectorAll('.number-input'))
-    .map(i => APP.normalizePhone(i.value.trim()))
+  // Textarea'dan numaraları oku (her satır bir numara)
+  const numbers = document.getElementById('numbersArea').value
+    .split(/[\n,;]+/)
+    .map(s => APP.normalizePhone(s.trim()))
     .filter(n => n && n.length >= 10);
 
   if (!numbers.length) { APP.toast('En az bir geçerli numara girin.', 'warning'); return; }
