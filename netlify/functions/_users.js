@@ -6,6 +6,12 @@ const { getStore } = require('@netlify/blobs');
 const crypto = require('crypto');
 
 function store() {
+  const token  = process.env.NETLIFY_AUTH_TOKEN;
+  const siteID = process.env.NETLIFY_SITE_ID;
+  if (token && siteID) {
+    return getStore({ name: 'sms-portal-users', siteID, token });
+  }
+  // Netlify Functions context'te otomatik çalışır
   return getStore('sms-portal-users');
 }
 
